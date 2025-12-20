@@ -1,34 +1,38 @@
 package com.example
 
-import io.ktor.serialization.kotlinx.json.*
+import com.example.model.Priority
+import com.example.model.Task
+import io.ktor.serialization.kotlinx.*
 import io.ktor.server.application.*
-import io.ktor.server.http.content.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
-import java.time.Duration
+import kotlinx.coroutines.delay
+import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 
 fun Application.configureSockets() {
     install(WebSockets) {
+        contentConverter = KotlinxWebsocketSerializationConverter(Json)
         pingPeriod = 15.seconds
         timeout = 15.seconds
         maxFrameSize = Long.MAX_VALUE
         masking = false
     }
     routing {
-        webSocket("/ws") { // websocketSession
-            for (frame in incoming) {
-                if (frame is Frame.Text) {
-                    val text = frame.readText()
-                    outgoing.send(Frame.Text("YOU SAID: $text"))
-                    if (text.equals("bye", ignoreCase = true)) {
-                        close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
-                    }
-                }
+        webSocket("/tasks") {
+            val tasks = listOf(
+                Task("cleaning", "Clean the house", Priority.Low),
+                Task("gardening", "Mow the lawn", Priority.Medium),
+                Task("shopping", "Buy the groceries", Priority.High),
+                Task("painting", "Paint the fence", Priority.Medium)
+            )
+
+            for (task in tasks) {
+                sendSerialized(task)
+                delay(1000)
             }
+            close(CloseReason(CloseReason.Codes.NORMAL, "All done"))
         }
     }
 }
