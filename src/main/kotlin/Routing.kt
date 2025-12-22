@@ -2,6 +2,7 @@ package com.example
 
 import com.example.model.Priority
 import com.example.model.Task
+import com.example.model.TaskRepository
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.http.content.*
@@ -17,15 +18,7 @@ import kotlin.time.Duration.Companion.seconds
 fun Application.configureRouting() {
     routing {
         get("/") {
-            val tasks = listOf(
-                Task("cleaning", "Clean the house", Priority.Low),
-                Task("gardening", "Mow the lawn", Priority.Medium),
-                Task("shopping", "Buy the groceries", Priority.High),
-                Task("painting", "Paint the fence", Priority.Medium)
-            )
-            for (task in tasks) {
-                call.respond(task)
-            }
+            call.respond(TaskRepository.allTasks())
         }
         // Static plugin. Try to access `/static/index.html`
         staticResources("/static", "static")

@@ -2,6 +2,7 @@ package com.example
 
 import com.example.model.Priority
 import com.example.model.Task
+import com.example.model.TaskRepository
 import io.ktor.serialization.kotlinx.*
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
@@ -9,6 +10,7 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
+import java.util.Collections
 import kotlin.time.Duration.Companion.seconds
 
 fun Application.configureSockets() {
@@ -20,19 +22,31 @@ fun Application.configureSockets() {
         masking = false
     }
     routing {
-        webSocket("/tasks") {
-            val tasks = listOf(
-                Task("cleaning", "Clean the house", Priority.Low),
-                Task("gardening", "Mow the lawn", Priority.Medium),
-                Task("shopping", "Buy the groceries", Priority.High),
-                Task("painting", "Paint the fence", Priority.Medium)
-            )
+        val sessions = Collections.synchronizedList<WebSocketServerSession>(ArrayList())
 
-            for (task in tasks) {
-                sendSerialized(task)
-                delay(1000)
-            }
+        webSocket("/tasks") {
+            sendAllTasks()
             close(CloseReason(CloseReason.Codes.NORMAL, "All done"))
         }
+
+        webSocket("/tasks2") {
+            sessions.add(this)
+            sendAllTasks()
+
+            while(true) {
+                val newTask = receiveDeserialized<Task>()
+                TaskRepository.addTask(newTask)
+                for(session in sessions) {
+                    session.sendSerialized(newTask)
+                }
+            }
+        }
+    }
+}
+
+private suspend fun DefaultWebSocketServerSession.sendAllTasks() {
+    for (task in TaskRepository.allTasks()) {
+        sendSerialized(task)
+        delay(1000)
     }
 }
