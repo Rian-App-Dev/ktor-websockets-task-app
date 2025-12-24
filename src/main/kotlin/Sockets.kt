@@ -26,11 +26,7 @@ fun Application.configureSockets() {
         val sessions = synchronizedList<WebSocketServerSession>(ArrayList())
 
         webSocket("/tasks") {
-            //sendAllTasks()
-            for (task in TaskRepository.allTasks()) {
-                sendSerialized(task)
-                delay(1000)
-            }
+            sendAllTasks()
             close(CloseReason(CloseReason.Codes.NORMAL, "All done"))
         }
 
@@ -51,6 +47,6 @@ fun Application.configureSockets() {
 private suspend fun DefaultWebSocketServerSession.sendAllTasks() {
     for (task in TaskRepository.allTasks()) {
         sendSerialized(task)
-        delay(1000)
+        delay(100)
     }
 }
